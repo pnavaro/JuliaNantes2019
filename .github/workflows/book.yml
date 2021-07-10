@@ -31,7 +31,7 @@ jobs:
 
       - name: Build the book
         run: |
-          julia --project -e 'using Books; using JuliaNantes2019; M = JuliaNantes2019; build_all()'
+          julia --project -e 'using Books; mkpath("_build"); html()'
         env:
           GKS_ENCODING: "utf8"
           GKSwstype: "100"
