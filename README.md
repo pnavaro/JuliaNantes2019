@@ -1,6 +1,6 @@
 # JuliaNantes2019
 
-Notebooks for Julia French Day in Nantes June 17th 2019
+Notebooks for [Julia French Day in Nantes June 17th 2019](https://julialang.univ-nantes.fr/programme/)
 
 Some notes about how to compute derivatives using FFT with Julia and how to get some performance.
 
