@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pierre Navaro" />
+  <title>Conclusion - Julia Day</title>
+  <link rel="shortcut icon" type="image/png" href="/JuliaNantes2019/favicon.png"/>
+  <link rel="stylesheet" href="/JuliaNantes2019/style.css"/>
+    <script src="/mousetrap.min.js"></script>
+    <!-- TODO: Add url_prefix. -->
+  <style>
+  @font-face {
+    font-family: JuliaMono-Regular;
+    src: url("/JuliaMono-Regular.woff2");
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+   
+</head>
+<body>
+<script>
+function click_next() {
+  var next = document.getElementById('nav-next');
+  next.firstElementChild.nextElementSibling.click();
+}
+function click_prev() {
+  var prev = document.getElementById('nav-prev');
+  prev.firstElementChild.click();
+}
+Mousetrap.bind('right', click_next);
+Mousetrap.bind('h', click_prev);
+Mousetrap.bind('left', click_prev);
+Mousetrap.bind('l', click_next);
+</script>
+
+<div class="books-container">
+<aside class="books-menu">
+<input type="checkbox" id="menu">
+<label for="menu">☰</label>
+<div class="books-title">
+<a href="/JuliaNantes2019/">Julia Day</a>
+</div><br />
+<span class="books-subtitle">
+Nantes 2019
+</span>
+<div class="books-menu-content">
+<li><a class="menu-level-1" href="/JuliaNantes2019/who-am-i.html"><b>2</b> Who am I ?</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/advection-equation-for-a-rotation-in-two-dimensional-domain.html"><b>3</b> Advection equation for a..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-exact-solution.html"><b>3.1</b> Function to compute ex..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/create-the-gif-to-show-what-we-are-computing.html"><b>3.2</b> Create the gif to show..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/vectorized-version.html"><b>3.3</b> Vectorized version</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation.html"><b>3.4</b> Inplace computation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation-and-fft-plans.html"><b>3.5</b> Inplace computation an..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/explicit-transpose.html"><b>3.6</b> Explicit transpose</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/conclusion.html"><b>3.7</b> Conclusion</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system.html"><b>4</b> 1D Vlasov–Ampere system</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/algorithm.html"><b>4.1</b> Algorithm</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/import-dependencies.html"><b>4.2</b> Import dependencies</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/mesh-data-structure.html"><b>4.3</b> Mesh data structure</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-charge-density.html"><b>4.4</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-electric-field.html"><b>4.5</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/structure-to-store-data-for-advection.html"><b>4.6</b> Structure to store dat..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-velocity.html"><b>4.7</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-space.html"><b>4.8</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/initialize-the-distribution-function.html"><b>4.9</b> Initialize the distrib..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/simulation-function.html"><b>4.10</b> Simulation function</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/run-simulation.html"><b>4.11</b> Run simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-cpu-version.html"><b>5</b> Deep Water problem CPU v..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-gpu-version.html"><b>6</b> Deep Water problem GPU v..</a></li>
+</div>
+</aside>
+
+<div class="books-content">
+<h2 data-number="3.7" id="conclusion"><span class="header-section-number">3.7</span> Conclusion</h2>
+<ul>
+<li>Use pre-allocations of memory and inplace computation are very important</li>
+<li>Try to always do computation on data contiguous in memory</li>
+<li>In this notebook, use btime to not taking account of time consumed in compilation.</li>
+</ul>
+
+
+<div class="bottom-nav">
+    <p id="nav-prev" style="text-align: left;">
+        <a class="menu-level-2" href="/JuliaNantes2019/explicit-transpose.html"><b>3.6</b> Explicit transpose</a> <kbd>←</kbd>
+        <span id="nav-next" style="float: right;">
+            <kbd>→</kbd> <a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system.html"><b>4</b> 1D Vlasov–Ampere system</a>
+        </span>
+    </p>
+</div>
+
+
+<div class="license">
+    <br/>
+  <br/>
+  <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
+    Pierre Navaro
+</div>
+</div>
+</div>
+</body>
+</html>

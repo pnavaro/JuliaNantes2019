@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pierre Navaro" />
+  <title>Run simulation - Julia Day</title>
+  <link rel="shortcut icon" type="image/png" href="/JuliaNantes2019/favicon.png"/>
+  <link rel="stylesheet" href="/JuliaNantes2019/style.css"/>
+    <script src="/mousetrap.min.js"></script>
+    <!-- TODO: Add url_prefix. -->
+  <style>
+  @font-face {
+    font-family: JuliaMono-Regular;
+    src: url("/JuliaMono-Regular.woff2");
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+   
+</head>
+<body>
+<script>
+function click_next() {
+  var next = document.getElementById('nav-next');
+  next.firstElementChild.nextElementSibling.click();
+}
+function click_prev() {
+  var prev = document.getElementById('nav-prev');
+  prev.firstElementChild.click();
+}
+Mousetrap.bind('right', click_next);
+Mousetrap.bind('h', click_prev);
+Mousetrap.bind('left', click_prev);
+Mousetrap.bind('l', click_next);
+</script>
+
+<div class="books-container">
+<aside class="books-menu">
+<input type="checkbox" id="menu">
+<label for="menu">☰</label>
+<div class="books-title">
+<a href="/JuliaNantes2019/">Julia Day</a>
+</div><br />
+<span class="books-subtitle">
+Nantes 2019
+</span>
+<div class="books-menu-content">
+<li><a class="menu-level-1" href="/JuliaNantes2019/who-am-i.html"><b>2</b> Who am I ?</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/advection-equation-for-a-rotation-in-two-dimensional-domain.html"><b>3</b> Advection equation for a..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-exact-solution.html"><b>3.1</b> Function to compute ex..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/create-the-gif-to-show-what-we-are-computing.html"><b>3.2</b> Create the gif to show..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/vectorized-version.html"><b>3.3</b> Vectorized version</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation.html"><b>3.4</b> Inplace computation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation-and-fft-plans.html"><b>3.5</b> Inplace computation an..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/explicit-transpose.html"><b>3.6</b> Explicit transpose</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/conclusion.html"><b>3.7</b> Conclusion</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system.html"><b>4</b> 1D Vlasov–Ampere system</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/algorithm.html"><b>4.1</b> Algorithm</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/import-dependencies.html"><b>4.2</b> Import dependencies</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/mesh-data-structure.html"><b>4.3</b> Mesh data structure</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-charge-density.html"><b>4.4</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-electric-field.html"><b>4.5</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/structure-to-store-data-for-advection.html"><b>4.6</b> Structure to store dat..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-velocity.html"><b>4.7</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-space.html"><b>4.8</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/initialize-the-distribution-function.html"><b>4.9</b> Initialize the distrib..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/simulation-function.html"><b>4.10</b> Simulation function</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/run-simulation.html"><b>4.11</b> Run simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-cpu-version.html"><b>5</b> Deep Water problem CPU v..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-gpu-version.html"><b>6</b> Deep Water problem GPU v..</a></li>
+</div>
+</aside>
+
+<div class="books-content">
+<h2 data-number="4.11" id="run-simulation"><span class="header-section-number">4.11</span> Run simulation</h2>
+<div class="sourceCode" id="cb29"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb29-1"><a href="/JuliaNantes2019#cb29-1" aria-hidden="true" tabindex="-1"></a>nx<span class="op">,</span> nv <span class="op">=</span> <span class="fl">256</span><span class="op">,</span> <span class="fl">256</span></span>
+<span id="cb29-2"><a href="/JuliaNantes2019#cb29-2" aria-hidden="true" tabindex="-1"></a>xmin<span class="op">,</span> xmax <span class="op">=</span>  <span class="fl">0</span>.<span class="op">,</span> <span class="fl">4</span><span class="op">*</span>π</span>
+<span id="cb29-3"><a href="/JuliaNantes2019#cb29-3" aria-hidden="true" tabindex="-1"></a>vmin<span class="op">,</span> vmax <span class="op">=</span> <span class="op">-</span><span class="fl">6</span>.<span class="op">,</span> <span class="fl">6</span>.</span>
+<span id="cb29-4"><a href="/JuliaNantes2019#cb29-4" aria-hidden="true" tabindex="-1"></a>tf <span class="op">=</span> <span class="fl">60</span></span>
+<span id="cb29-5"><a href="/JuliaNantes2019#cb29-5" aria-hidden="true" tabindex="-1"></a>nt <span class="op">=</span> <span class="fl">600</span></span>
+<span id="cb29-6"><a href="/JuliaNantes2019#cb29-6" aria-hidden="true" tabindex="-1"></a>t <span class="op">=</span>  range(<span class="fl">0</span><span class="op">,</span>stop<span class="op">=</span>tf<span class="op">,</span>length<span class="op">=</span>nt)</span>
+<span id="cb29-7"><a href="/JuliaNantes2019#cb29-7" aria-hidden="true" tabindex="-1"></a>plot(t<span class="op">,</span> <span class="op">-</span><span class="fl">0.1533</span><span class="op">*</span>t.<span class="op">-</span><span class="fl">5.48</span>)</span>
+<span id="cb29-8"><a href="/JuliaNantes2019#cb29-8" aria-hidden="true" tabindex="-1"></a>f<span class="op">,</span> nrj <span class="op">=</span> vlasov_ampere(nx<span class="op">,</span> nv<span class="op">,</span> xmin<span class="op">,</span> xmax<span class="op">,</span> vmin<span class="op">,</span> vmax<span class="op">,</span> tf<span class="op">,</span> nt)</span>
+<span id="cb29-9"><a href="/JuliaNantes2019#cb29-9" aria-hidden="true" tabindex="-1"></a>plot<span class="op">!</span>(t<span class="op">,</span> nrj <span class="op">,</span> label<span class="op">=:</span>ampere )</span></code></pre></div>
+<div class="sourceCode" id="cb30"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb30-1"><a href="/JuliaNantes2019#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Plots<span class="op">,</span> BenchmarkTools<span class="op">,</span> FFTW<span class="op">,</span> LinearAlgebra</span></code></pre></div>
+<div class="sourceCode" id="cb31"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb31-1"><a href="/JuliaNantes2019#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">struct</span> Mesh</span>
+<span id="cb31-2"><a href="/JuliaNantes2019#cb31-2" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-3"><a href="/JuliaNantes2019#cb31-3" aria-hidden="true" tabindex="-1"></a>    nx   <span class="op">::</span> <span class="dt">Int64</span></span>
+<span id="cb31-4"><a href="/JuliaNantes2019#cb31-4" aria-hidden="true" tabindex="-1"></a>    ny   <span class="op">::</span> <span class="dt">Int64</span></span>
+<span id="cb31-5"><a href="/JuliaNantes2019#cb31-5" aria-hidden="true" tabindex="-1"></a>    x    <span class="op">::</span> <span class="dt">Vector</span>{<span class="dt">Float64</span>}</span>
+<span id="cb31-6"><a href="/JuliaNantes2019#cb31-6" aria-hidden="true" tabindex="-1"></a>    y    <span class="op">::</span> <span class="dt">Vector</span>{<span class="dt">Float64</span>}</span>
+<span id="cb31-7"><a href="/JuliaNantes2019#cb31-7" aria-hidden="true" tabindex="-1"></a>    kx   <span class="op">::</span> <span class="dt">Vector</span>{<span class="dt">Float64</span>}</span>
+<span id="cb31-8"><a href="/JuliaNantes2019#cb31-8" aria-hidden="true" tabindex="-1"></a>    ky   <span class="op">::</span> <span class="dt">Vector</span>{<span class="dt">Float64</span>}</span>
+<span id="cb31-9"><a href="/JuliaNantes2019#cb31-9" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb31-10"><a href="/JuliaNantes2019#cb31-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">function</span> Mesh( xmin<span class="op">,</span> xmax<span class="op">,</span> nx<span class="op">,</span> ymin<span class="op">,</span> ymax<span class="op">,</span> ny)</span>
+<span id="cb31-11"><a href="/JuliaNantes2019#cb31-11" aria-hidden="true" tabindex="-1"></a>        x <span class="op">=</span> range(xmin<span class="op">,</span> stop<span class="op">=</span>xmax<span class="op">,</span> length<span class="op">=</span>nx<span class="op">+</span><span class="fl">1</span>)[<span class="fl">1</span><span class="op">:</span><span class="kw">end</span><span class="op">-</span><span class="fl">1</span>]  <span class="co">## we remove the end point</span></span>
+<span id="cb31-12"><a href="/JuliaNantes2019#cb31-12" aria-hidden="true" tabindex="-1"></a>        y <span class="op">=</span> range(ymin<span class="op">,</span> stop<span class="op">=</span>ymax<span class="op">,</span> length<span class="op">=</span>ny<span class="op">+</span><span class="fl">1</span>)[<span class="fl">1</span><span class="op">:</span><span class="kw">end</span><span class="op">-</span><span class="fl">1</span>]  <span class="co">## periodic boundary condition</span></span>
+<span id="cb31-13"><a href="/JuliaNantes2019#cb31-13" aria-hidden="true" tabindex="-1"></a>        kx  <span class="op">=</span> <span class="fl">2</span>π <span class="op">./</span> (xmax<span class="op">-</span>xmin) <span class="op">.*</span> [<span class="fl">0</span><span class="op">:</span>nx÷<span class="fl">2</span><span class="op">-</span><span class="fl">1</span><span class="op">;</span>nx÷<span class="fl">2</span><span class="op">-</span>nx<span class="op">:-</span><span class="fl">1</span>]</span>
+<span id="cb31-14"><a href="/JuliaNantes2019#cb31-14" aria-hidden="true" tabindex="-1"></a>        ky  <span class="op">=</span> <span class="fl">2</span>π <span class="op">./</span> (ymax<span class="op">-</span>ymin) <span class="op">.*</span> [<span class="fl">0</span><span class="op">:</span>ny÷<span class="fl">2</span><span class="op">-</span><span class="fl">1</span><span class="op">;</span>ny÷<span class="fl">2</span><span class="op">-</span>ny<span class="op">:-</span><span class="fl">1</span>]</span>
+<span id="cb31-15"><a href="/JuliaNantes2019#cb31-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">new</span>( nx<span class="op">,</span> ny<span class="op">,</span> x<span class="op">,</span> y<span class="op">,</span> kx<span class="op">,</span> ky)</span>
+<span id="cb31-16"><a href="/JuliaNantes2019#cb31-16" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb31-17"><a href="/JuliaNantes2019#cb31-17" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb32"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb32-1"><a href="/JuliaNantes2019#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> exact(time<span class="op">,</span> mesh <span class="op">::</span> Mesh<span class="op">;</span> shift<span class="op">=</span><span class="fl">1.0</span>)</span>
+<span id="cb32-2"><a href="/JuliaNantes2019#cb32-2" aria-hidden="true" tabindex="-1"></a>   </span>
+<span id="cb32-3"><a href="/JuliaNantes2019#cb32-3" aria-hidden="true" tabindex="-1"></a>    f <span class="op">=</span> zeros(<span class="dt">Float64</span><span class="op">,</span>(mesh.nx<span class="op">,</span> mesh.ny))</span>
+<span id="cb32-4"><a href="/JuliaNantes2019#cb32-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> (i<span class="op">,</span> x) <span class="kw">in</span> enumerate(mesh.x)<span class="op">,</span> (j<span class="op">,</span> y) <span class="kw">in</span> enumerate(mesh.y)</span>
+<span id="cb32-5"><a href="/JuliaNantes2019#cb32-5" aria-hidden="true" tabindex="-1"></a>        xn <span class="op">=</span> cos(time)<span class="op">*</span>x <span class="op">-</span> sin(time)<span class="op">*</span>y</span>
+<span id="cb32-6"><a href="/JuliaNantes2019#cb32-6" aria-hidden="true" tabindex="-1"></a>        yn <span class="op">=</span> sin(time)<span class="op">*</span>x <span class="op">+</span> cos(time)<span class="op">*</span>y</span>
+<span id="cb32-7"><a href="/JuliaNantes2019#cb32-7" aria-hidden="true" tabindex="-1"></a>        f[i<span class="op">,</span>j] <span class="op">=</span> exp(<span class="op">-</span>(xn<span class="op">-</span>shift)<span class="op">*</span>(xn<span class="op">-</span>shift)<span class="op">/</span><span class="fl">0.1</span>)<span class="op">*</span>exp(<span class="op">-</span>(yn<span class="op">-</span>shift)<span class="op">*</span>(yn<span class="op">-</span>shift)<span class="op">/</span><span class="fl">0.1</span>)</span>
+<span id="cb32-8"><a href="/JuliaNantes2019#cb32-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb32-9"><a href="/JuliaNantes2019#cb32-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-10"><a href="/JuliaNantes2019#cb32-10" aria-hidden="true" tabindex="-1"></a>    f</span>
+<span id="cb32-11"><a href="/JuliaNantes2019#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb33"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb33-1"><a href="/JuliaNantes2019#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> rotation_on_cpu( mesh <span class="op">::</span> Mesh<span class="op">,</span> nt <span class="op">::</span> <span class="dt">Int64</span><span class="op">,</span> tf <span class="op">::</span> <span class="dt">Float64</span>) </span>
+<span id="cb33-2"><a href="/JuliaNantes2019#cb33-2" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb33-3"><a href="/JuliaNantes2019#cb33-3" aria-hidden="true" tabindex="-1"></a>    dt <span class="op">=</span> tf <span class="op">/</span> nt</span>
+<span id="cb33-4"><a href="/JuliaNantes2019#cb33-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb33-5"><a href="/JuliaNantes2019#cb33-5" aria-hidden="true" tabindex="-1"></a>    f   <span class="op">=</span> zeros(<span class="dt">ComplexF64</span><span class="op">,</span>(mesh.nx<span class="op">,</span>mesh.ny))</span>
+<span id="cb33-6"><a href="/JuliaNantes2019#cb33-6" aria-hidden="true" tabindex="-1"></a>    f  .<span class="op">=</span> exact( <span class="fl">0.0</span><span class="op">,</span> mesh )</span>
+<span id="cb33-7"><a href="/JuliaNantes2019#cb33-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb33-8"><a href="/JuliaNantes2019#cb33-8" aria-hidden="true" tabindex="-1"></a>    exky <span class="op">=</span> exp.( <span class="fl">1im</span><span class="op">*</span>tan(dt<span class="op">/</span><span class="fl">2</span>) <span class="op">.*</span> mesh.x  <span class="op">.*</span> mesh.ky<span class="op">&#39;</span>)</span>
+<span id="cb33-9"><a href="/JuliaNantes2019#cb33-9" aria-hidden="true" tabindex="-1"></a>    ekxy <span class="op">=</span> exp.(<span class="op">-</span><span class="fl">1im</span><span class="op">*</span>sin(dt)   <span class="op">.*</span> mesh.y<span class="op">&#39;</span> <span class="op">.*</span> mesh.kx )</span>
+<span id="cb33-10"><a href="/JuliaNantes2019#cb33-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb33-11"><a href="/JuliaNantes2019#cb33-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> n <span class="op">=</span> <span class="fl">1</span><span class="op">:</span>nt</span>
+<span id="cb33-12"><a href="/JuliaNantes2019#cb33-12" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb33-13"><a href="/JuliaNantes2019#cb33-13" aria-hidden="true" tabindex="-1"></a>        fft<span class="op">!</span>(f<span class="op">,</span> <span class="fl">2</span>)</span>
+<span id="cb33-14"><a href="/JuliaNantes2019#cb33-14" aria-hidden="true" tabindex="-1"></a>        f .<span class="op">=</span> exky <span class="op">.*</span> f</span>
+<span id="cb33-15"><a href="/JuliaNantes2019#cb33-15" aria-hidden="true" tabindex="-1"></a>        ifft<span class="op">!</span>(f<span class="op">,</span><span class="fl">2</span>)</span>
+<span id="cb33-16"><a href="/JuliaNantes2019#cb33-16" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb33-17"><a href="/JuliaNantes2019#cb33-17" aria-hidden="true" tabindex="-1"></a>        fft<span class="op">!</span>(f<span class="op">,</span> <span class="fl">1</span>)</span>
+<span id="cb33-18"><a href="/JuliaNantes2019#cb33-18" aria-hidden="true" tabindex="-1"></a>        f .<span class="op">=</span> ekxy <span class="op">.*</span> f</span>
+<span id="cb33-19"><a href="/JuliaNantes2019#cb33-19" aria-hidden="true" tabindex="-1"></a>        ifft<span class="op">!</span>(f<span class="op">,</span> <span class="fl">1</span>)</span>
+<span id="cb33-20"><a href="/JuliaNantes2019#cb33-20" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb33-21"><a href="/JuliaNantes2019#cb33-21" aria-hidden="true" tabindex="-1"></a>        fft<span class="op">!</span>(f<span class="op">,</span> <span class="fl">2</span>)</span>
+<span id="cb33-22"><a href="/JuliaNantes2019#cb33-22" aria-hidden="true" tabindex="-1"></a>        f .<span class="op">=</span> exky <span class="op">.*</span> f</span>
+<span id="cb33-23"><a href="/JuliaNantes2019#cb33-23" aria-hidden="true" tabindex="-1"></a>        ifft<span class="op">!</span>(f<span class="op">,</span> <span class="fl">2</span>)</span>
+<span id="cb33-24"><a href="/JuliaNantes2019#cb33-24" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb33-25"><a href="/JuliaNantes2019#cb33-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb33-26"><a href="/JuliaNantes2019#cb33-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb33-27"><a href="/JuliaNantes2019#cb33-27" aria-hidden="true" tabindex="-1"></a>    real(f)</span>
+<span id="cb33-28"><a href="/JuliaNantes2019#cb33-28" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb33-29"><a href="/JuliaNantes2019#cb33-29" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb34"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb34-1"><a href="/JuliaNantes2019#cb34-1" aria-hidden="true" tabindex="-1"></a>mesh <span class="op">=</span> Mesh( <span class="op">-</span>π<span class="op">,</span> π<span class="op">,</span> <span class="fl">1024</span><span class="op">,</span> <span class="op">-</span>π<span class="op">,</span> π<span class="op">,</span> <span class="fl">1024</span>)</span>
+<span id="cb34-2"><a href="/JuliaNantes2019#cb34-2" aria-hidden="true" tabindex="-1"></a>nt<span class="op">,</span> tf <span class="op">=</span> <span class="fl">100</span><span class="op">,</span> <span class="fl">20</span>.</span>
+<span id="cb34-3"><a href="/JuliaNantes2019#cb34-3" aria-hidden="true" tabindex="-1"></a>rotation_on_cpu(mesh<span class="op">,</span> <span class="fl">1</span><span class="op">,</span> <span class="fl">0.1</span>)</span>
+<span id="cb34-4"><a href="/JuliaNantes2019#cb34-4" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> norm( rotation_on_cpu(mesh<span class="op">,</span> nt<span class="op">,</span> tf) .<span class="op">-</span> exact( tf<span class="op">,</span> mesh))</span></code></pre></div>
+<div class="sourceCode" id="cb35"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb35-1"><a href="/JuliaNantes2019#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> CUDAdrv</span>
+<span id="cb35-2"><a href="/JuliaNantes2019#cb35-2" aria-hidden="true" tabindex="-1"></a>CUDAdrv.name(CuDevice(<span class="fl">0</span>))</span></code></pre></div>
+<div class="sourceCode" id="cb36"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb36-1"><a href="/JuliaNantes2019#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> CuArrays</span>
+<span id="cb36-2"><a href="/JuliaNantes2019#cb36-2" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> CuArrays.CUFFT</span></code></pre></div>
+<div class="sourceCode" id="cb37"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb37-1"><a href="/JuliaNantes2019#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> rotation_on_gpu( mesh <span class="op">::</span> Mesh<span class="op">,</span> nt <span class="op">::</span> <span class="dt">Int64</span><span class="op">,</span> tf <span class="op">::</span> <span class="dt">Float64</span>)</span>
+<span id="cb37-2"><a href="/JuliaNantes2019#cb37-2" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-3"><a href="/JuliaNantes2019#cb37-3" aria-hidden="true" tabindex="-1"></a>    dt <span class="op">=</span> tf <span class="op">/</span> nt</span>
+<span id="cb37-4"><a href="/JuliaNantes2019#cb37-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-5"><a href="/JuliaNantes2019#cb37-5" aria-hidden="true" tabindex="-1"></a>    f   <span class="op">=</span> zeros(<span class="dt">ComplexF64</span><span class="op">,</span>(mesh.nx<span class="op">,</span> mesh.ny))</span>
+<span id="cb37-6"><a href="/JuliaNantes2019#cb37-6" aria-hidden="true" tabindex="-1"></a>    f  .<span class="op">=</span> exact( <span class="fl">0.0</span><span class="op">,</span> mesh)</span>
+<span id="cb37-7"><a href="/JuliaNantes2019#cb37-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-8"><a href="/JuliaNantes2019#cb37-8" aria-hidden="true" tabindex="-1"></a>    d_f    <span class="op">=</span> CuArray(f) <span class="co"># allocate f on GPU</span></span>
+<span id="cb37-9"><a href="/JuliaNantes2019#cb37-9" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-10"><a href="/JuliaNantes2019#cb37-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Create fft plans on GPU</span></span>
+<span id="cb37-11"><a href="/JuliaNantes2019#cb37-11" aria-hidden="true" tabindex="-1"></a>    p_x    <span class="op">=</span> plan_fft<span class="op">!</span>(d_f<span class="op">,</span>  [<span class="fl">1</span>])</span>
+<span id="cb37-12"><a href="/JuliaNantes2019#cb37-12" aria-hidden="true" tabindex="-1"></a>    pinv_x <span class="op">=</span> plan_ifft<span class="op">!</span>(d_f<span class="op">,</span> [<span class="fl">1</span>])</span>
+<span id="cb37-13"><a href="/JuliaNantes2019#cb37-13" aria-hidden="true" tabindex="-1"></a>    p_y    <span class="op">=</span> plan_fft<span class="op">!</span>(d_f<span class="op">,</span>  [<span class="fl">2</span>])</span>
+<span id="cb37-14"><a href="/JuliaNantes2019#cb37-14" aria-hidden="true" tabindex="-1"></a>    pinv_y <span class="op">=</span> plan_ifft<span class="op">!</span>(d_f<span class="op">,</span> [<span class="fl">2</span>])  </span>
+<span id="cb37-15"><a href="/JuliaNantes2019#cb37-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-16"><a href="/JuliaNantes2019#cb37-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Allocate on GPU</span></span>
+<span id="cb37-17"><a href="/JuliaNantes2019#cb37-17" aria-hidden="true" tabindex="-1"></a>    d_exky <span class="op">=</span> CuArray(exp.( <span class="fl">1im</span><span class="op">*</span>tan(dt<span class="op">/</span><span class="fl">2</span>) <span class="op">.*</span> mesh.x  <span class="op">.*</span> mesh.ky<span class="op">&#39;</span>))</span>
+<span id="cb37-18"><a href="/JuliaNantes2019#cb37-18" aria-hidden="true" tabindex="-1"></a>    d_ekxy <span class="op">=</span> CuArray(exp.(<span class="op">-</span><span class="fl">1im</span><span class="op">*</span>sin(dt)   <span class="op">.*</span> mesh.y<span class="op">&#39;</span> <span class="op">.*</span> mesh.kx ))</span>
+<span id="cb37-19"><a href="/JuliaNantes2019#cb37-19" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-20"><a href="/JuliaNantes2019#cb37-20" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> n <span class="op">=</span> <span class="fl">1</span><span class="op">:</span>nt</span>
+<span id="cb37-21"><a href="/JuliaNantes2019#cb37-21" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb37-22"><a href="/JuliaNantes2019#cb37-22" aria-hidden="true" tabindex="-1"></a>        p_y <span class="op">*</span> d_f</span>
+<span id="cb37-23"><a href="/JuliaNantes2019#cb37-23" aria-hidden="true" tabindex="-1"></a>        d_f <span class="op">.*=</span> d_exky </span>
+<span id="cb37-24"><a href="/JuliaNantes2019#cb37-24" aria-hidden="true" tabindex="-1"></a>        pinv_y <span class="op">*</span> d_f</span>
+<span id="cb37-25"><a href="/JuliaNantes2019#cb37-25" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb37-26"><a href="/JuliaNantes2019#cb37-26" aria-hidden="true" tabindex="-1"></a>        p_x <span class="op">*</span> d_f</span>
+<span id="cb37-27"><a href="/JuliaNantes2019#cb37-27" aria-hidden="true" tabindex="-1"></a>        d_f <span class="op">.*=</span> d_ekxy </span>
+<span id="cb37-28"><a href="/JuliaNantes2019#cb37-28" aria-hidden="true" tabindex="-1"></a>        pinv_x <span class="op">*</span> d_f</span>
+<span id="cb37-29"><a href="/JuliaNantes2019#cb37-29" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb37-30"><a href="/JuliaNantes2019#cb37-30" aria-hidden="true" tabindex="-1"></a>        p_y <span class="op">*</span> d_f</span>
+<span id="cb37-31"><a href="/JuliaNantes2019#cb37-31" aria-hidden="true" tabindex="-1"></a>        d_f <span class="op">.*=</span> d_exky </span>
+<span id="cb37-32"><a href="/JuliaNantes2019#cb37-32" aria-hidden="true" tabindex="-1"></a>        pinv_y <span class="op">*</span> d_f</span>
+<span id="cb37-33"><a href="/JuliaNantes2019#cb37-33" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb37-34"><a href="/JuliaNantes2019#cb37-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb37-35"><a href="/JuliaNantes2019#cb37-35" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-36"><a href="/JuliaNantes2019#cb37-36" aria-hidden="true" tabindex="-1"></a>    f .<span class="op">=</span> collect(d_f) <span class="co"># Transfer f from GPU to CPU</span></span>
+<span id="cb37-37"><a href="/JuliaNantes2019#cb37-37" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-38"><a href="/JuliaNantes2019#cb37-38" aria-hidden="true" tabindex="-1"></a>    real(f)</span>
+<span id="cb37-39"><a href="/JuliaNantes2019#cb37-39" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-40"><a href="/JuliaNantes2019#cb37-40" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb38"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb38-1"><a href="/JuliaNantes2019#cb38-1" aria-hidden="true" tabindex="-1"></a>nt<span class="op">,</span> tf <span class="op">=</span> <span class="fl">100</span><span class="op">,</span> <span class="fl">20</span>.</span>
+<span id="cb38-2"><a href="/JuliaNantes2019#cb38-2" aria-hidden="true" tabindex="-1"></a>rotation_on_gpu(mesh<span class="op">,</span> <span class="fl">1</span><span class="op">,</span> <span class="fl">0.1</span>)</span>
+<span id="cb38-3"><a href="/JuliaNantes2019#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> norm( rotation_on_gpu(mesh<span class="op">,</span> nt<span class="op">,</span> tf) .<span class="op">-</span> exact( tf<span class="op">,</span> mesh))</span></code></pre></div>
+<div class="sourceCode" id="cb39"><pre class="sourceCode julia"><code class="sourceCode julia"></code></pre></div>
+
+
+<div class="bottom-nav">
+    <p id="nav-prev" style="text-align: left;">
+        <a class="menu-level-2" href="/JuliaNantes2019/simulation-function.html"><b>4.10</b> Simulation function</a> <kbd>←</kbd>
+        <span id="nav-next" style="float: right;">
+            <kbd>→</kbd> <a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-cpu-version.html"><b>5</b> Deep Water problem CPU v..</a>
+        </span>
+    </p>
+</div>
+
+
+<div class="license">
+    <br/>
+  <br/>
+  <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
+    Pierre Navaro
+</div>
+</div>
+</div>
+</body>
+</html>

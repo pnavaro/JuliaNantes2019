@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pierre Navaro" />
+  <title>Vectorized version - Julia Day</title>
+  <link rel="shortcut icon" type="image/png" href="/JuliaNantes2019/favicon.png"/>
+  <link rel="stylesheet" href="/JuliaNantes2019/style.css"/>
+    <script src="/mousetrap.min.js"></script>
+    <!-- TODO: Add url_prefix. -->
+  <style>
+  @font-face {
+    font-family: JuliaMono-Regular;
+    src: url("/JuliaMono-Regular.woff2");
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+   
+</head>
+<body>
+<script>
+function click_next() {
+  var next = document.getElementById('nav-next');
+  next.firstElementChild.nextElementSibling.click();
+}
+function click_prev() {
+  var prev = document.getElementById('nav-prev');
+  prev.firstElementChild.click();
+}
+Mousetrap.bind('right', click_next);
+Mousetrap.bind('h', click_prev);
+Mousetrap.bind('left', click_prev);
+Mousetrap.bind('l', click_next);
+</script>
+
+<div class="books-container">
+<aside class="books-menu">
+<input type="checkbox" id="menu">
+<label for="menu">☰</label>
+<div class="books-title">
+<a href="/JuliaNantes2019/">Julia Day</a>
+</div><br />
+<span class="books-subtitle">
+Nantes 2019
+</span>
+<div class="books-menu-content">
+<li><a class="menu-level-1" href="/JuliaNantes2019/who-am-i.html"><b>2</b> Who am I ?</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/advection-equation-for-a-rotation-in-two-dimensional-domain.html"><b>3</b> Advection equation for a..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-exact-solution.html"><b>3.1</b> Function to compute ex..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/create-the-gif-to-show-what-we-are-computing.html"><b>3.2</b> Create the gif to show..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/vectorized-version.html"><b>3.3</b> Vectorized version</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation.html"><b>3.4</b> Inplace computation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation-and-fft-plans.html"><b>3.5</b> Inplace computation an..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/explicit-transpose.html"><b>3.6</b> Explicit transpose</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/conclusion.html"><b>3.7</b> Conclusion</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system.html"><b>4</b> 1D Vlasov–Ampere system</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/algorithm.html"><b>4.1</b> Algorithm</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/import-dependencies.html"><b>4.2</b> Import dependencies</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/mesh-data-structure.html"><b>4.3</b> Mesh data structure</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-charge-density.html"><b>4.4</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-electric-field.html"><b>4.5</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/structure-to-store-data-for-advection.html"><b>4.6</b> Structure to store dat..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-velocity.html"><b>4.7</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-space.html"><b>4.8</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/initialize-the-distribution-function.html"><b>4.9</b> Initialize the distrib..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/simulation-function.html"><b>4.10</b> Simulation function</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/run-simulation.html"><b>4.11</b> Run simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-cpu-version.html"><b>5</b> Deep Water problem CPU v..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-gpu-version.html"><b>6</b> Deep Water problem GPU v..</a></li>
+</div>
+</aside>
+
+<div class="books-content">
+<h2 data-number="3.3" id="vectorized-version"><span class="header-section-number">3.3</span> Vectorized version</h2>
+<ul>
+<li>We store the 2d arrays <code>exky</code> and <code>ekxy</code> to compute the derivatives.</li>
+<li>We save cpu time by computing them before the loop over time</li>
+</ul>
+<div class="sourceCode" id="cb6"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb6-1"><a href="/JuliaNantes2019#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> vectorized(tf<span class="op">,</span> nt<span class="op">,</span> mesh<span class="op">::</span>Mesh)</span>
+<span id="cb6-2"><a href="/JuliaNantes2019#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="/JuliaNantes2019#cb6-3" aria-hidden="true" tabindex="-1"></a>    dt <span class="op">=</span> tf<span class="op">/</span>nt</span>
+<span id="cb6-4"><a href="/JuliaNantes2019#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="/JuliaNantes2019#cb6-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-6"><a href="/JuliaNantes2019#cb6-6" aria-hidden="true" tabindex="-1"></a>    f <span class="op">=</span> exact(<span class="fl">0.0</span><span class="op">,</span> mesh)</span>
+<span id="cb6-7"><a href="/JuliaNantes2019#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="/JuliaNantes2019#cb6-8" aria-hidden="true" tabindex="-1"></a>    exky <span class="op">=</span> exp.( <span class="fl">1im</span><span class="op">*</span>tan(dt<span class="op">/</span><span class="fl">2</span>) <span class="op">.*</span> mesh.x  <span class="op">.*</span> mesh.ky<span class="op">&#39;</span>)</span>
+<span id="cb6-9"><a href="/JuliaNantes2019#cb6-9" aria-hidden="true" tabindex="-1"></a>    ekxy <span class="op">=</span> exp.(<span class="op">-</span><span class="fl">1im</span><span class="op">*</span>sin(dt)   <span class="op">.*</span> mesh.y<span class="op">&#39;</span> <span class="op">.*</span> mesh.kx )</span>
+<span id="cb6-10"><a href="/JuliaNantes2019#cb6-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb6-11"><a href="/JuliaNantes2019#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">for</span> n <span class="op">=</span> <span class="fl">1</span><span class="op">:</span>nt</span>
+<span id="cb6-12"><a href="/JuliaNantes2019#cb6-12" aria-hidden="true" tabindex="-1"></a>        f .<span class="op">=</span> real(ifft(exky <span class="op">.*</span> fft(f<span class="op">,</span> <span class="fl">2</span>)<span class="op">,</span> <span class="fl">2</span>)) <span class="co"># df / dt = -x * df / dy  in [t,t+dt/2]</span></span>
+<span id="cb6-13"><a href="/JuliaNantes2019#cb6-13" aria-hidden="true" tabindex="-1"></a>        f .<span class="op">=</span> real(ifft(ekxy <span class="op">.*</span> fft(f<span class="op">,</span> <span class="fl">1</span>)<span class="op">,</span> <span class="fl">1</span>)) <span class="co"># df / dt = y * df / dx in [t,t+dt]</span></span>
+<span id="cb6-14"><a href="/JuliaNantes2019#cb6-14" aria-hidden="true" tabindex="-1"></a>        f .<span class="op">=</span> real(ifft(exky <span class="op">.*</span> fft(f<span class="op">,</span> <span class="fl">2</span>)<span class="op">,</span> <span class="fl">2</span>)) <span class="co"># df / dt = -x * df / dy in [t+dt/2,t+dt]</span></span>
+<span id="cb6-15"><a href="/JuliaNantes2019#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="kw">end</span></span>
+<span id="cb6-16"><a href="/JuliaNantes2019#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="/JuliaNantes2019#cb6-17" aria-hidden="true" tabindex="-1"></a>    f</span>
+<span id="cb6-18"><a href="/JuliaNantes2019#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb7-1"><a href="/JuliaNantes2019#cb7-1" aria-hidden="true" tabindex="-1"></a>nt<span class="op">,</span> tf <span class="op">=</span> <span class="fl">1000</span><span class="op">,</span> <span class="fl">200</span>π</span>
+<span id="cb7-2"><a href="/JuliaNantes2019#cb7-2" aria-hidden="true" tabindex="-1"></a>mesh <span class="op">=</span> Mesh(<span class="op">-</span>π<span class="op">,</span> π<span class="op">,</span> <span class="fl">256</span><span class="op">,</span> <span class="op">-</span>π<span class="op">,</span> π<span class="op">,</span> <span class="fl">512</span>)</span>
+<span id="cb7-3"><a href="/JuliaNantes2019#cb7-3" aria-hidden="true" tabindex="-1"></a>f <span class="op">=</span> vectorized(<span class="fl">0.1</span><span class="op">,</span> <span class="fl">1</span><span class="op">,</span> mesh) <span class="co"># trigger build</span></span>
+<span id="cb7-4"><a href="/JuliaNantes2019#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="pp">@time</span> norm(vectorized(tf<span class="op">,</span> nt<span class="op">,</span> mesh) .<span class="op">-</span> exact(tf<span class="op">,</span> mesh))</span></code></pre></div>
+<pre><code>julia --check-bounds=no -O3 --track-allocation=user program.jl</code></pre>
+<pre><code>        - function vectorized(tf, nt, mesh::Mesh)
+        - 
+234240560     dt = tf/nt
+        - 
+        0     f = exact(0.0, mesh)
+        - 
+  1048656     exky = exp.( 1im*tan(dt/2) .* mesh.x  .* mesh.ky&#39;)
+  1048656     ekxy = exp.(-1im*sin(dt)   .* mesh.y&#39; .* mesh.kx )
+        -     
+        0     for n = 1:nt
+2621712000         f .= real(ifft(exky .* fft(f, 2), 2))
+2621712000         f .= real(ifft(ekxy .* fft(f, 1), 1))
+2621712000         f .= real(ifft(exky .* fft(f, 2), 2))
+        -     end
+        - 
+        0     f
+        - end</code></pre>
+
+
+<div class="bottom-nav">
+    <p id="nav-prev" style="text-align: left;">
+        <a class="menu-level-2" href="/JuliaNantes2019/create-the-gif-to-show-what-we-are-computing.html"><b>3.2</b> Create the gif to show..</a> <kbd>←</kbd>
+        <span id="nav-next" style="float: right;">
+            <kbd>→</kbd> <a class="menu-level-2" href="/JuliaNantes2019/inplace-computation.html"><b>3.4</b> Inplace computation</a>
+        </span>
+    </p>
+</div>
+
+
+<div class="license">
+    <br/>
+  <br/>
+  <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
+    Pierre Navaro
+</div>
+</div>
+</div>
+</body>
+</html>

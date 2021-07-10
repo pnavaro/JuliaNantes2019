@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en-US" xml:lang="en-US">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pierre Navaro" />
+  <title>Function to compute the electric field - Julia Day</title>
+  <link rel="shortcut icon" type="image/png" href="/JuliaNantes2019/favicon.png"/>
+  <link rel="stylesheet" href="/JuliaNantes2019/style.css"/>
+    <script src="/mousetrap.min.js"></script>
+    <!-- TODO: Add url_prefix. -->
+  <style>
+  @font-face {
+    font-family: JuliaMono-Regular;
+    src: url("/JuliaMono-Regular.woff2");
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+   
+</head>
+<body>
+<script>
+function click_next() {
+  var next = document.getElementById('nav-next');
+  next.firstElementChild.nextElementSibling.click();
+}
+function click_prev() {
+  var prev = document.getElementById('nav-prev');
+  prev.firstElementChild.click();
+}
+Mousetrap.bind('right', click_next);
+Mousetrap.bind('h', click_prev);
+Mousetrap.bind('left', click_prev);
+Mousetrap.bind('l', click_next);
+</script>
+
+<div class="books-container">
+<aside class="books-menu">
+<input type="checkbox" id="menu">
+<label for="menu">☰</label>
+<div class="books-title">
+<a href="/JuliaNantes2019/">Julia Day</a>
+</div><br />
+<span class="books-subtitle">
+Nantes 2019
+</span>
+<div class="books-menu-content">
+<li><a class="menu-level-1" href="/JuliaNantes2019/who-am-i.html"><b>2</b> Who am I ?</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/advection-equation-for-a-rotation-in-two-dimensional-domain.html"><b>3</b> Advection equation for a..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-exact-solution.html"><b>3.1</b> Function to compute ex..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/create-the-gif-to-show-what-we-are-computing.html"><b>3.2</b> Create the gif to show..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/vectorized-version.html"><b>3.3</b> Vectorized version</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation.html"><b>3.4</b> Inplace computation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/inplace-computation-and-fft-plans.html"><b>3.5</b> Inplace computation an..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/explicit-transpose.html"><b>3.6</b> Explicit transpose</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/conclusion.html"><b>3.7</b> Conclusion</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system.html"><b>4</b> 1D Vlasov–Ampere system</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/algorithm.html"><b>4.1</b> Algorithm</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/import-dependencies.html"><b>4.2</b> Import dependencies</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/mesh-data-structure.html"><b>4.3</b> Mesh data structure</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-charge-density.html"><b>4.4</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-electric-field.html"><b>4.5</b> Function to compute th..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/structure-to-store-data-for-advection.html"><b>4.6</b> Structure to store dat..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-velocity.html"><b>4.7</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/implement-advection-function-in-space.html"><b>4.8</b> Implement advection fu..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/initialize-the-distribution-function.html"><b>4.9</b> Initialize the distrib..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/simulation-function.html"><b>4.10</b> Simulation function</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/run-simulation.html"><b>4.11</b> Run simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-cpu-version.html"><b>5</b> Deep Water problem CPU v..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-problem-gpu-version.html"><b>6</b> Deep Water problem GPU v..</a></li>
+</div>
+</aside>
+
+<div class="books-content">
+<h2 data-number="4.5" id="function-to-compute-the-electric-field"><span class="header-section-number">4.5</span> Function to compute the electric field</h2>
+<div class="sourceCode" id="cb22"><pre class="sourceCode julia"><code class="sourceCode julia"><span id="cb22-1"><a href="/JuliaNantes2019#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;&quot;&quot;</span></span>
+<span id="cb22-2"><a href="/JuliaNantes2019#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="st">compute electric field from ρ</span></span>
+<span id="cb22-3"><a href="/JuliaNantes2019#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="st">&quot;&quot;&quot;</span></span>
+<span id="cb22-4"><a href="/JuliaNantes2019#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="kw">function</span> compute_e(mesh<span class="op">::</span>UniformMesh<span class="op">,</span> ρ)</span>
+<span id="cb22-5"><a href="/JuliaNantes2019#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="/JuliaNantes2019#cb22-6" aria-hidden="true" tabindex="-1"></a>   n <span class="op">=</span> mesh.length</span>
+<span id="cb22-7"><a href="/JuliaNantes2019#cb22-7" aria-hidden="true" tabindex="-1"></a>   k <span class="op">=</span>  <span class="fl">2</span>π <span class="op">/</span> (mesh.stop <span class="op">-</span> mesh.start)</span>
+<span id="cb22-8"><a href="/JuliaNantes2019#cb22-8" aria-hidden="true" tabindex="-1"></a>   modes  <span class="op">=</span> zeros(<span class="dt">Float64</span><span class="op">,</span> n)</span>
+<span id="cb22-9"><a href="/JuliaNantes2019#cb22-9" aria-hidden="true" tabindex="-1"></a>   modes .<span class="op">=</span> k <span class="op">*</span> vcat(<span class="fl">0</span><span class="op">:</span>n÷<span class="fl">2</span><span class="op">-</span><span class="fl">1</span><span class="op">,-</span>n÷<span class="fl">2</span><span class="op">:-</span><span class="fl">1</span>)</span>
+<span id="cb22-10"><a href="/JuliaNantes2019#cb22-10" aria-hidden="true" tabindex="-1"></a>   modes[<span class="fl">1</span>] <span class="op">=</span> <span class="fl">1.0</span></span>
+<span id="cb22-11"><a href="/JuliaNantes2019#cb22-11" aria-hidden="true" tabindex="-1"></a>   ρ̂ <span class="op">=</span> fft(ρ)<span class="op">./</span>modes</span>
+<span id="cb22-12"><a href="/JuliaNantes2019#cb22-12" aria-hidden="true" tabindex="-1"></a>   vec(real(ifft(<span class="op">-</span><span class="fl">1im</span> <span class="op">.*</span> ρ̂)))</span>
+<span id="cb22-13"><a href="/JuliaNantes2019#cb22-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-14"><a href="/JuliaNantes2019#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="kw">end</span></span></code></pre></div>
+
+
+<div class="bottom-nav">
+    <p id="nav-prev" style="text-align: left;">
+        <a class="menu-level-2" href="/JuliaNantes2019/function-to-compute-the-charge-density.html"><b>4.4</b> Function to compute th..</a> <kbd>←</kbd>
+        <span id="nav-next" style="float: right;">
+            <kbd>→</kbd> <a class="menu-level-2" href="/JuliaNantes2019/structure-to-store-data-for-advection.html"><b>4.6</b> Structure to store dat..</a>
+        </span>
+    </p>
+</div>
+
+
+<div class="license">
+    <br/>
+  <br/>
+  <a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>
+    Pierre Navaro
+</div>
+</div>
+</div>
+</body>
+</html>
