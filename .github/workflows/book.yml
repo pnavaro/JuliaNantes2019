@@ -1,0 +1,56 @@
+name: BOOK
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-and-deploy:
+    name: Test and deploy
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - "1.6"
+        os:
+          - ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          persist-credentials: false
+
+      - uses: julia-actions/setup-julia@v1
+        with:
+          version: ${{ matrix.version }}
+
+      - uses: actions/cache@v1
+        env:
+          cache-name: cache-artifacts
+        with:
+          path: ~/.julia/artifacts
+          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-test-${{ env.cache-name }}-
+            ${{ runner.os }}-test-
+
+      - name: Install Julia dependencies
+        uses: julia-actions/julia-buildpkg@latest
+
+      - name: Build the book
+        run: |
+          julia --project -e 'using Books; using JuliaNantes2019; M = JuliaNantes2019; build_all()'
+        env:
+          GKS_ENCODING: "utf8"
+          GKSwstype: "100"
+
+      - name: Deploy to secondary branch
+        # Always updates documentation when ubuntu passes, which is fine.
+        if: ${{ github.event_name == 'push' && runner.os == 'Linux' }}
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          force_orphan: true
+          publish_dir: ./_build/

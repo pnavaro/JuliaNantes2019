@@ -1,0 +1,17 @@
+[projects]
+
+  [projects.default]
+  contents = [
+    "01.Rotation2D",
+    "02.VlasovAmpere",
+    "03.RotationGPU",
+    "04.DeepWaterProblem",
+    "05.DeepWaterProblemGPU"
+  ]
+  output_filename = "books"
+
+  # Prefix for GitHub Pages.
+  online_url_prefix = "/JuliaNantes2019"
+
+  port = 8012
+
