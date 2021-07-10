@@ -4,13 +4,5 @@ subtitle: Nantes 2019
 book: false
 author: Pierre Navaro
 pdf-footer: https://github.com/pnavaro/JuliaNantes2019
-
-# An example additional header include for html.
-# Note that the url will be updated by `Books.fix_links`.
-header-includes:
-- |
-  ```{=html}
-  <link rel="stylesheet" href="/files/style.css"/>
-  ```
 mousetrap: true
 ---
