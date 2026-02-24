@@ -1,7 +1,7 @@
 name = "JuliaNantes2019"
 uuid = "c16bdd7e-bd50-46e6-a4a5-b1d0ec97406c"
-authors = ["Pierre Navaro <pierre.navaro@math.cnrs.fr>"]
 version = "0.1.0"
+authors = ["Pierre Navaro <pierre.navaro@math.cnrs.fr>"]
 
 [deps]
 BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
@@ -13,5 +13,6 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 
 [compat]
 FFTW = "1.10.0"
+LinearAlgebra = "1.12.0"
 Plots = "1.41.6"
 ProgressMeter = "1.11.0"
