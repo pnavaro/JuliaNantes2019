@@ -13,3 +13,4 @@ ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 
 [compat]
 ProgressMeter = "1.11.0"
+FFTW = "1.10.0"
