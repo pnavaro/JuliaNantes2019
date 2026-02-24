@@ -1,4 +1,4 @@
-# Julia Nantes 2019
+# Julia Nantes 2019 {-}
 
 Notes for Julia French Day in Nantes June 17th 2019
 
@@ -7,6 +7,9 @@ Notes for Julia French Day in Nantes June 17th 2019
 https://github.com/pnavaro/JuliaNantes2019
 
 Launch notebooks on binder [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pnavaro/JuliaNantes2019/HEAD)
+
+
+### Who am I  {-}
 
 - **Pierre Navaro**
 - Ph.D in Computational Aeroacoustics, 1998-2002 (Université du Havre) (Fortran 77+PVM)

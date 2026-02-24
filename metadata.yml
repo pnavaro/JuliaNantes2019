@@ -5,4 +5,7 @@ book: false
 author: Pierre Navaro
 pdf-footer: https://github.com/pnavaro/JuliaNantes2019
 mousetrap: true
+toc: true
+tocdepth: 1
+titlepage: true
 ---
