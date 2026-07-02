@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pierre Navaro" />
+  <title>2D Rotation Problem: CPU vs GPU Implementation - Julia Day</title>
+  <link rel="shortcut icon" type="image/png" href="/JuliaNantes2019/favicon.png"/>
+  <link rel="stylesheet" href="/JuliaNantes2019/style.css"/>
+    <script src="/JuliaNantes2019/mousetrap.min.js"></script>
+    <style>
+  @font-face {
+    font-family: JuliaMono-Regular;
+    src: url("/JuliaNantes2019/JuliaMono-Regular.woff2");
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <link rel="stylesheet" href="/JuliaNantes2019/github.min.css">
+<script src="/JuliaNantes2019/highlight.min.js"></script>
+<script src="/JuliaNantes2019/julia.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        if (!el.classList.contains('output')) {
+            hljs.highlightElement(el);
+        }
+    });
+});
+</script>
+ 
+</head>
+<body>
+<script>
+function click_next() {
+  var next = document.getElementById('nav-next');
+  next.firstElementChild.nextElementSibling.click();
+}
+function click_prev() {
+  var prev = document.getElementById('nav-prev');
+  prev.firstElementChild.click();
+}
+Mousetrap.bind('right', click_next);
+Mousetrap.bind('h', click_prev);
+Mousetrap.bind('left', click_prev);
+Mousetrap.bind('l', click_next);
+</script>
+
+<div class="books-container">
+<aside class="books-menu">
+<input type="checkbox" id="menu">
+<label for="menu">☰</label>
+<div class="books-title">
+<a href="/JuliaNantes2019/">Julia Day</a>
+</div><br />
+<span class="books-subtitle">
+Nantes 2019
+</span>
+<div class="books-menu-content">
+<li><a class="menu-level-1" href="/JuliaNantes2019/rotation"><b>1</b> 2D Rotation Problem: Advec..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation"><b>1.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/performance-optimization-four-implementations"><b>1.2</b> Performance Optimization..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system"><b>2</b> 1D Vlasov–Ampere System</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation-1"><b>2.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/simulation"><b>2.2</b> Simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-rotation-problem-cpu-vs-gpu-implementation"><b>3</b> 2D Rotation Problem: CPU v..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep"><b>4</b> Deep Water Wave Problem: C..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation-2"><b>4.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/matsuno-model-deep-water-equations"><b>4.2</b> Matsuno Model: Deep Wate..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/animation-creation"><b>4.3</b> Animation Creation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/main-cpu-simulation"><b>4.4</b> Main CPU Simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-wave-problem-gpu-version"><b>5</b> Deep Water Wave Problem: G..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/import-cuda-libraries"><b>5.1</b> Import CUDA Libraries</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/benchmarking"><b>5.2</b> Benchmarking</a></li>
+</div>
+</aside>
+
+<div class="books-content">
+<h1 data-number="3" id="d-rotation-problem-cpu-vs-gpu-implementation"><span class="header-section-number">3</span> 2D Rotation Problem: CPU vs GPU Implementation</h1>
+<p>This chapter demonstrates how to solve a simple 2D rotation problem (Section <a href="/JuliaNantes2019/rotation#sec:rotation">1</a>) using both CPU and GPU implementations. The problem serves as an excellent example of <strong>GPU acceleration</strong> using CUDA for computational speedup and <strong>Performance comparison</strong> between CPU and GPU implementations</p>
+<h3 data-number="3.0.1" id="cpu-implementation-with-strang-splitting"><span class="header-section-number">3.0.1</span> CPU Implementation with Strang Splitting</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+Solve the 2D rotation problem on CPU using Fourier spectral method
+with Strang splitting
+
+Algorithm:
+The rotation problem couples advection in x and y directions.
+We use Strang splitting to decompose into simpler steps:
+
+1. Half-step in y-direction (Fourier method)
+2. Full-step in x-direction (Fourier method)
+3. Half-step in y-direction (Fourier method)
+
+For the advection equation ∂f/∂t + u·∂f/∂x = 0 with periodic BCs,
+the Fourier spectral solution in one time step is:
+
+f̂_k(t+Δt) = exp(-i k u Δt) f̂_k(t)
+
+where f̂_k is the Fourier transform and k is the wavenumber.
+
+Parameters:
+- mesh: 2D mesh structure
+- nt: number of time steps
+- tf: final time
+
+Returns:
+- f: final distribution function (real-valued)
+&quot;&quot;&quot;
+function rotation_on_cpu(mesh::Mesh, nt::Int64, tf::Float64)
+    
+    # Calculate time step
+    dt = tf / nt
+    
+    # Allocate distribution function (use complex for FFT compatibility)
+    f = zeros(ComplexF64, (mesh.nx, mesh.ny))
+    
+    # Initialize with exact solution at t=0
+    f .= exact(0.0, mesh)
+    
+    # Pre-compute exponential factors for each direction
+    # These encode the spectral solution of each advection step
+    
+    # y-direction: u_y = -x, so phase factor is exp(i·tan(dt/2)·x·k_y)
+    exky = exp.(1im * tan(dt / 2) .* mesh.x .* mesh.ky&#39;)
+    
+    # x-direction: u_x = y, so phase factor is exp(-i·sin(dt)·y·k_x)
+    ekxy = exp.(-1im * sin(dt) .* mesh.y&#39; .* mesh.kx)
+    
+    # Time stepping loop
+    @showprogress for n = 1:nt
+        
+        # === STEP 1: Half-step in y-direction ===
+        # FFT in y-direction (dimension 2)
+        fft!(f, 2)
+        
+        # Multiply by phase factor (spectral multiplication)
+        f .= exky .* f
+        
+        # Inverse FFT back to physical space
+        ifft!(f, 2)
+        
+        # === STEP 2: Full-step in x-direction ===
+        # FFT in x-direction (dimension 1)
+        fft!(f, 1)
+        
+        # Multiply by phase factor
+        f .= ekxy .* f
+        
+        # Inverse FFT back to physical space
+        ifft!(f, 1)
+        
+        # === STEP 3: Half-step in y-direction ===
+        # FFT in y-direction
+        fft!(f, 2)
+        
+        # Multiply by phase factor
+        f .= exky .* f
+        
+        # Inverse FFT back to physical space
+        ifft!(f, 2)
+        
+    end
+    
+    # Return real part (imaginary parts are numerical errors)
+    real(f)
+    
+end</code></pre>
+<h3 data-number="3.0.2" id="cpu-test-and-benchmarking"><span class="header-section-number">3.0.2</span> CPU Test and Benchmarking</h3>
+<pre class="julia"><code># Set up the mesh: 1024×1024 grid in [-π, π]²
+mesh = Mesh(-π, π, 1024, -π, π, 1024)
+
+# Parameters
+nt, tf = 100, 20.      # 100 time steps to t=20
+
+# Quick test with 1 step
+rotation_on_cpu(mesh, 1, 0.1)
+
+# Time the CPU computation and compare with exact solution
+@time norm(rotation_on_cpu(mesh, nt, tf) .- exact(tf, mesh))</code></pre>
+<p><strong>Output interpretation:</strong></p>
+<ul>
+<li>The <code>@time</code> macro reports computation time and memory allocation</li>
+<li><code>norm(solution - exact)</code> gives the L² error between numerical and exact solutions</li>
+<li>This error should be small (order of machine precision if working correctly)</li>
+</ul>
+<hr />
+<h3 data-number="3.0.3" id="gpu-acceleration-with-cuda"><span class="header-section-number">3.0.3</span> GPU Acceleration with CUDA</h3>
+<p>The same algorithm can be implemented on GPU for massive speedup. Modern GPUs can achieve 10-100× speedup for FFT-heavy operations.</p>
+<pre class="julia"><code>using CUDA
+using CuArrays
+using CuArrays.CUFFT</code></pre>
+<ul>
+<li><code>CuArrays</code>: Provides GPU array types (<code>CuArray</code>) that work like regular Julia arrays but live on GPU memory</li>
+<li><code>CuArrays.CUFFT</code>: CUDA-accelerated FFT library (much faster than CPU FFTW for large arrays)</li>
+</ul>
+<pre class="julia"><code>&quot;&quot;&quot;
+Solve the 2D rotation problem on GPU using CUDA acceleration
+
+The algorithm is identical to the CPU version, but:
+1. Arrays are allocated in GPU memory (CuArray)
+2. FFT plans are created for GPU execution
+3. All operations happen on the GPU
+4. Only the final result is transferred back to CPU
+
+This is MUCH faster for large arrays because:
+- GPU FFTs are highly optimized
+- GPU memory bandwidth is much higher
+- No CPU-GPU communication during the time loop
+
+Parameters:
+- mesh: 2D mesh structure (used for dimensions and wavenumbers)
+- nt: number of time steps
+- tf: final time
+
+Returns:
+- f: final distribution function on CPU (real-valued)
+&quot;&quot;&quot;
+function rotation_on_gpu(mesh::Mesh, nt::Int64, tf::Float64)
+    
+    # Calculate time step
+    dt = tf / nt
+    
+    # Initialize on CPU
+    f = zeros(ComplexF64, (mesh.nx, mesh.ny))
+    f .= exact(0.0, mesh)
+    
+    # === Transfer to GPU ===
+    # Allocate f on GPU memory
+    d_f = CuArray(f)
+    
+    # === Create FFT Plans ===
+    # Creating FFT plans once is more efficient than planning each FFT call
+    # Plans are cached and reused
+    
+    # Forward FFT along dimension 1 (x-direction)
+    p_x = plan_fft!(d_f, [1])
+    
+    # Inverse FFT along dimension 1
+    pinv_x = plan_ifft!(d_f, [1])
+    
+    # Forward FFT along dimension 2 (y-direction)
+    p_y = plan_fft!(d_f, [2])
+    
+    # Inverse FFT along dimension 2
+    pinv_y = plan_ifft!(d_f, [2])
+    
+    # === Transfer phase factors to GPU ===
+    # Pre-compute and transfer exponential factors to GPU memory
+    # This avoids transferring them from CPU every iteration
+    d_exky = CuArray(exp.(1im * tan(dt / 2) .* mesh.x .* mesh.ky&#39;))
+    d_ekxy = CuArray(exp.(-1im * sin(dt) .* mesh.y&#39; .* mesh.kx))
+    
+    # === Time stepping loop (all on GPU) ===
+    @showprogress for n = 1:nt
+        
+        # === STEP 1: Half-step in y-direction ===
+        # Forward FFT in y-direction (using GPU plan)
+        p_y * d_f
+        
+        # Multiply by phase factor on GPU
+        d_f .*= d_exky
+        
+        # Inverse FFT in y-direction
+        pinv_y * d_f
+        
+        # === STEP 2: Full-step in x-direction ===
+        # Forward FFT in x-direction
+        p_x * d_f
+        
+        # Multiply by phase factor on GPU
+        d_f .*= d_ekxy
+        
+        # Inverse FFT in x-direction
+        pinv_x * d_f
+        
+        # === STEP 3: Half-step in y-direction ===
+        # Forward FFT in y-direction
+        p_y * d_f
+        
+        # Multiply by phase factor on GPU
+        d_f .*= d_exky
+        
+        # Inverse FFT in y-direction
+        pinv_y * d_f
+        
+    end
+    
+    # === Transfer result back to CPU ===
+    # collect() transfers the GPU array back to CPU memory
+    f .= collect(d_f)
+    
+    # Return real part
+    real(f)
+    
+end</code></pre>
+<p><strong>GPU vs CPU Key Differences:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Aspect</th>
+<th>CPU</th>
+<th>GPU</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Array type</td>
+<td><code>Array{ComplexF64}</code></td>
+<td><code>CuArray{ComplexF64}</code></td>
+</tr>
+<tr>
+<td>FFT library</td>
+<td>FFTW</td>
+<td>CUFFT</td>
+</tr>
+<tr>
+<td>Memory</td>
+<td>CPU RAM</td>
+<td>GPU VRAM</td>
+</tr>
+<tr>
+<td>FFT Planning</td>
+<td>Done before loops</td>
+<td>Critical for performance</td>
+</tr>
+<tr>
+<td>Data Transfer</td>
+<td>Implicit</td>
+<td>Explicit with <code>CuArray</code></td>
+</tr>
+<tr>
+<td>Speedup</td>
+<td>Baseline</td>
+<td>10-100× for large arrays</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Optimization Principles Applied:</strong></p>
+<ol type="1">
+<li><strong>Pre-compute on CPU, transfer once</strong>: Exponential factors computed once and transferred</li>
+<li><strong>Avoid CPU-GPU transfers in loops</strong>: All computation happens on GPU</li>
+<li><strong>Pre-plan FFTs</strong>: Creating plans once and reusing them is much faster</li>
+<li><strong>Use in-place FFTs</strong>: <code>fft!</code> modifies arrays in place, saving memory</li>
+</ol>
+<h3 data-number="3.0.4" id="gpu-test-and-benchmarking"><span class="header-section-number">3.0.4</span> GPU Test and Benchmarking</h3>
+<pre class="julia"><code># Same mesh and parameters
+nt, tf = 100, 20.
+
+# Quick test with 1 step
+rotation_on_gpu(mesh, 1, 0.1)
+
+# Time the GPU computation and compare with exact solution
+@time norm(rotation_on_gpu(mesh, nt, tf) .- exact(tf, mesh))</code></pre>
+<p><strong>Expected Results:</strong> - GPU version should be significantly faster than CPU (roughly 10-100× depending on GPU) - Numerical error should be similar to CPU version (same algorithm) - GPU shines with larger arrays and more time steps</p>
+<h3 data-number="3.0.5" id="performance-analysis-and-interpretation"><span class="header-section-number">3.0.5</span> Performance Analysis and Interpretation</h3>
+<p>To properly compare CPU and GPU:</p>
+<pre class="julia"><code># CPU timing
+time_cpu = @elapsed rotation_on_cpu(mesh, nt, tf)
+
+# GPU timing (excluding first run which includes compilation)
+rotation_on_gpu(mesh, 1, 0.1)  # Warmup
+time_gpu = @elapsed rotation_on_gpu(mesh, nt, tf)
+
+# Speedup factor
+speedup = time_cpu / time_gpu
+println(&quot;CPU time: $(time_cpu) seconds&quot;)
+println(&quot;GPU time: $(time_gpu) seconds&quot;)
+println(&quot;Speedup: $(speedup)×&quot;)</code></pre>
+<p>Where GPU Wins:</p>
+<ul>
+<li><strong>Large arrays</strong>: For this 1024×1024 mesh, GPU acceleration is substantial</li>
+<li><strong>Many time steps</strong>: GPU amortizes startup costs over many iterations</li>
+<li><strong>FFT-heavy computations</strong>: GPUs are optimized for FFT operations</li>
+</ul>
+<p>Where CPU is Competitive:</p>
+<ul>
+<li><strong>Small arrays</strong>: Overhead of GPU transfer dominates</li>
+<li><strong>Few time steps</strong>: GPU initialization not worth it</li>
+<li><strong>Memory-limited problems</strong>: Some GPUs have limited VRAM</li>
+</ul>
+
+
+<div class="bottom-nav">
+    <p id="nav-prev" style="text-align: left;">
+        <a class="menu-level-2" href="/JuliaNantes2019/simulation"><b>2.2</b> Simulation</a> <kbd>←</kbd>
+        <span id="nav-next" style="float: right;">
+            <kbd>→</kbd> <a class="menu-level-1" href="/JuliaNantes2019/deep"><b>4</b> Deep Water Wave Problem: C..</a>
+        </span>
+    </p>
+</div>
+
+
+<div class="license">
+    <br/>
+  <br/>
+  <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>
+    Pierre Navaro
+</div>
+</div>
+</div>
+</body>
+</html>

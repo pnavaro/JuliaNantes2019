@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pierre Navaro" />
+  <title>Julia implementation - Julia Day</title>
+  <link rel="shortcut icon" type="image/png" href="/JuliaNantes2019/favicon.png"/>
+  <link rel="stylesheet" href="/JuliaNantes2019/style.css"/>
+    <script src="/JuliaNantes2019/mousetrap.min.js"></script>
+    <style>
+  @font-face {
+    font-family: JuliaMono-Regular;
+    src: url("/JuliaNantes2019/JuliaMono-Regular.woff2");
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <link rel="stylesheet" href="/JuliaNantes2019/github.min.css">
+<script src="/JuliaNantes2019/highlight.min.js"></script>
+<script src="/JuliaNantes2019/julia.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        if (!el.classList.contains('output')) {
+            hljs.highlightElement(el);
+        }
+    });
+});
+</script>
+ 
+</head>
+<body>
+<script>
+function click_next() {
+  var next = document.getElementById('nav-next');
+  next.firstElementChild.nextElementSibling.click();
+}
+function click_prev() {
+  var prev = document.getElementById('nav-prev');
+  prev.firstElementChild.click();
+}
+Mousetrap.bind('right', click_next);
+Mousetrap.bind('h', click_prev);
+Mousetrap.bind('left', click_prev);
+Mousetrap.bind('l', click_next);
+</script>
+
+<div class="books-container">
+<aside class="books-menu">
+<input type="checkbox" id="menu">
+<label for="menu">☰</label>
+<div class="books-title">
+<a href="/JuliaNantes2019/">Julia Day</a>
+</div><br />
+<span class="books-subtitle">
+Nantes 2019
+</span>
+<div class="books-menu-content">
+<li><a class="menu-level-1" href="/JuliaNantes2019/rotation"><b>1</b> 2D Rotation Problem: Advec..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation"><b>1.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/performance-optimization-four-implementations"><b>1.2</b> Performance Optimization..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system"><b>2</b> 1D Vlasov–Ampere System</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation-1"><b>2.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/simulation"><b>2.2</b> Simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-rotation-problem-cpu-vs-gpu-implementation"><b>3</b> 2D Rotation Problem: CPU v..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep"><b>4</b> Deep Water Wave Problem: C..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation-2"><b>4.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/matsuno-model-deep-water-equations"><b>4.2</b> Matsuno Model: Deep Wate..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/animation-creation"><b>4.3</b> Animation Creation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/main-cpu-simulation"><b>4.4</b> Main CPU Simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-wave-problem-gpu-version"><b>5</b> Deep Water Wave Problem: G..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/import-cuda-libraries"><b>5.1</b> Import CUDA Libraries</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/benchmarking"><b>5.2</b> Benchmarking</a></li>
+</div>
+</aside>
+
+<div class="books-content">
+<h2 data-number="2.1" id="julia-implementation-1"><span class="header-section-number">2.1</span> Julia implementation</h2>
+<pre class="julia"><code>using FFTW, Plots, LinearAlgebra
+using BenchmarkTools, Statistics</code></pre>
+<ul>
+<li><code>FFTW</code>: Fast Fourier Transform library for efficient frequency-domain operations</li>
+<li><code>Plots</code>: Visualization of results</li>
+<li><code>LinearAlgebra</code>: Linear algebra utilities</li>
+<li><code>BenchmarkTools</code>: Performance benchmarking</li>
+<li><code>Statistics</code>: Statistical functions</li>
+</ul>
+<h3 data-number="2.1.1" id="mesh-data-structure"><span class="header-section-number">2.1.1</span> Mesh Data Structure</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+    UniformMesh(start, stop, length)
+
+    1D uniform mesh data structure for storing discretization information.
+&quot;&quot;&quot;
+struct UniformMesh
+
+   start    :: Float64      # Starting point of the domain
+   stop     :: Float64      # Ending point of the domain
+   length   :: Int64        # Number of grid points
+   step     :: Float64      # Grid spacing (Δx or Δv)
+   points   :: Vector{Float64}  # Array of grid point coordinates
+
+   function UniformMesh(start, stop, length::Int; endpoint=true)
+
+       # Create uniform grid from start to stop with &#39;length&#39; points
+       # endpoint=false means we exclude the right boundary (periodic domain)
+       points = LinRange(start, stop, length+1)[1:end-1]
+       
+       # Uniform spacing
+       step = (stop - start) / length
+
+       new(start, stop, length, step, points)
+
+   end
+
+end</code></pre>
+<p><strong>Purpose:</strong> This data structure encapsulates all the information needed to describe a 1D uniform grid, making the code cleaner and more organized.</p>
+<h3 data-number="2.1.2" id="function-to-compute-charge-density"><span class="header-section-number">2.1.2</span> Function to Compute Charge Density</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+
+    compute_rho(meshv::UniformMesh, f)
+
+    Compute the charge density from the distribution function:
+    ρ(x,t) = ∫ f(x,v,t) dv
+
+    We subtract the mean to remove the constant background charge,
+    keeping only the oscillating part that drives the dynamics.
+
+&quot;&quot;&quot;
+function compute_rho(meshv::UniformMesh, f)
+
+   dv  = meshv.step                      # Velocity grid spacing
+   ρ = dv .* vec(sum(real(f), dims=2))   # Integrate f over all velocities
+   ρ .- mean(ρ)                          # Subtract the mean
+   
+end</code></pre>
+<ul>
+<li>We numerically integrate the distribution function over velocity space using the trapezoidal rule (represented by multiplying by <span class="math inline">\(dv\)</span>)</li>
+<li>Subtracting the mean gives us the deviation from the background charge, which is what creates the net electric field</li>
+<li><code>dims=2</code> specifies we sum over the velocity dimension (columns), leaving the spatial dimension (rows)</li>
+</ul>
+<h3 data-number="2.1.3" id="function-to-compute-electric-field"><span class="header-section-number">2.1.3</span> Function to Compute Electric Field</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+    compute_e(mesh::UniformMesh, ρ)
+
+    Compute the electric field from the charge density using Poisson&#39;s equation.
+    
+    In Fourier space: ∂²E/∂x² = -ρ/ε₀ becomes (-k²) Ê = -ρ̂/ε₀
+    
+    Solution: Ê_k = ρ̂_k / (i k ε₀)
+    
+&quot;&quot;&quot;
+function compute_e(mesh::UniformMesh, ρ)
+
+   n = mesh.length
+   k =  2π / (mesh.stop - mesh.start)    # Fundamental wavenumber
+   
+   # Wavenumber array for FFT output ordering
+   modes  = zeros(Float64, n)
+   modes .= k * vcat(0:n÷2-1, -n÷2:-1)  # [0, 1, 2, ..., -n/2, ..., -1] × k
+   
+   modes[1] = 1.0  # Avoid division by zero for the zero mode
+   
+   ρ̂ = fft(ρ)./modes                    # Fourier transform and divide by k
+   
+   vec(real(ifft(-1im .* ρ̂)))            # Inverse transform with factor of -i
+   
+end</code></pre>
+<ol type="1">
+<li>Fourier transform the charge density: <span class="math inline">\(\hat{\rho}_k\)</span></li>
+<li>For each mode <span class="math inline">\(k\)</span>, solve Poisson equation in Fourier space: <span class="math inline">\(\hat{E}_k = -i\hat{\rho}_k / k\)</span></li>
+<li>The factor <span class="math inline">\(-i\)</span> comes from integrating <span class="math inline">\(E = -\partial_x \phi\)</span> in Fourier space</li>
+<li>Inverse Fourier transform to get <span class="math inline">\(E(x)\)</span> in physical space</li>
+</ol>
+<h3 data-number="2.1.4" id="structure-for-advection-operations"><span class="header-section-number">2.1.4</span> Structure for Advection Operations</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+
+    advection! = AmpereAdvection(mesh) 
+
+    This structure encapsulates the advection operators for the Vlasov–Ampere system:
+    
+    - Advection in velocity: ∂f/∂t + E(x) ∂f/∂v = 0
+    - Advection in space:    ∂f/∂t + v ∂f/∂x = 0
+    - Field update:          ∂E/∂t = -J = -∫ fv dv
+
+    It precomputes and stores the wavenumber array for efficient Fourier operations.
+
+&quot;&quot;&quot;
+struct AmpereAdvection 
+    
+    mesh :: UniformMesh
+    kx   :: Vector{Float64}   # Wavenumber array
+
+    function AmpereAdvection(mesh)
+        
+        nx  = mesh.length
+        dx  = mesh.step
+        Lx  = mesh.stop - mesh.start
+        kx  = zeros(Float64, nx)
+        
+        # Standard FFT wavenumber ordering: [0, 1, 2, ..., -n/2, ..., -2, -1]
+        kx .= 2π/Lx .* fftfreq(nx, nx)
+        
+        new(mesh, kx)
+      
+    end
+
+end</code></pre>
+<p><strong>Why Store Wavenumbers?</strong> Pre-computing the wavenumber array avoids redundant calculations in the inner loop of the simulation.</p>
+<h3 data-number="2.1.5" id="advection-function-in-velocity-space"><span class="header-section-number">2.1.5</span> Advection Function in Velocity Space</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+    Advection function along velocity (v-direction)
+
+    Solves: ∂f/∂t = E ∂f/∂v
+    
+    In Fourier space in x, this becomes:
+    ∂f̂_k/∂t = E_k ∂f̂_k/∂v
+    
+    Semi-implicit solution:
+    f̂_k^(n+1)(v) = exp(-i dt E_k / k_x) × f̂_k^n(v)
+    
+    The exponential factor represents how the electric field
+    shifts the phase of each Fourier component as a function of velocity.
+
+&quot;&quot;&quot;
+function (adv::AmpereAdvection)(fᵗ::Array{ComplexF64,2}, 
+                                e::Vector{ComplexF64}, 
+                                dt::Float64)
+    
+    # Transform to Fourier space in x (rows are spatial modes, columns are velocity)
+    fft!(fᵗ, 1)
+    
+    # Apply the advection operator: multiply by phase factor
+    # -1im * dt * adv.kx gives the exponent for each wavenumber
+    # transpose(e) broadcasts the electric field (one value per mode) to all velocities
+    fᵗ .= fᵗ .* exp.(-1im * dt * adv.kx * transpose(e))
+    
+    # Transform back to physical space
+    ifft!(fᵗ, 1)
+
+end</code></pre>
+<ul>
+<li>In Fourier space, the operator <span class="math inline">\(\frac{\partial}{\partial x}\)</span> becomes multiplication by <span class="math inline">\(ik\)</span></li>
+<li>The advection equation <span class="math inline">\(\frac{\partial f}{\partial t} = -v\frac{\partial f}{\partial x}\)</span> in Fourier space becomes <span class="math inline">\(\frac{\partial \hat{f}_k}{\partial t} = -v \cdot ik \hat{f}_k\)</span></li>
+<li>The exact solution is <span class="math inline">\(\hat{f}_k(t) = e^{-ik v t} \hat{f}_k(0)\)</span></li>
+</ul>
+<h3 data-number="2.1.6" id="advection-function-in-space"><span class="header-section-number">2.1.6</span> Advection Function in Space</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+    Advection function along space (x-direction) and field computation
+
+    Solves the coupled system:
+    ∂f/∂t = v ∂f/∂x
+    ∂E/∂t = -J = -∫ fv dv
+    
+    Steps:
+    1. Transform f to Fourier space in x
+    2. Apply spatial advection: f̂_k → exp(-i k v dt) f̂_k
+    3. Compute charge density from the advected distribution
+    4. Compute electric field from charge density using Poisson equation
+    5. Transform everything back to physical space
+
+&quot;&quot;&quot;
+function (adv::AmpereAdvection)(f::Array{ComplexF64,2}, 
+                                e::Vector{ComplexF64}, 
+                                v::Vector{Float64}, 
+                                dt::Float64)
+    
+    # Prepare the phase shift factor for each (wavenumber, velocity) pair
+    ev = exp.(-1im * dt * adv.kx * transpose(v))    
+    
+    # Transform f to Fourier space in x
+    fft!(f, 1)
+    
+    # Apply spatial advection: multiply by the phase shift
+    f .= f .* ev
+    
+    # Compute charge density by integrating over velocity
+    dv = v[2] - v[1]                    # Velocity spacing
+    ρ = dv * vec(sum(f, dims=2))        # ρ_k = Δv ∑_j f̂_k(v_j)
+    
+    # Solve Poisson equation for each Fourier mode (except k=0)
+    for i in 2:length(e)
+        e[i] = -1im * ρ[i] ./ adv.kx[i]
+    end
+    
+    # Zero mode remains unchanged
+    e[1] = 0.0
+    
+    # Transform the distribution function back to physical space
+    ifft!(f, 1)
+    
+    # Transform the electric field back to physical space
+    ifft!(e)
+    
+    # The electric field should be real; take the real part
+    # (imaginary parts are numerical errors)
+    e .= real(e)
+
+end</code></pre>
+<ul>
+<li>The phase shift <span class="math inline">\(e^{-ikt v}\)</span> encodes how each Fourier mode of the distribution shifts due to spatial advection</li>
+<li>After advection, we immediately compute the charge density and field self-consistently</li>
+<li>This ensures the field responds to the updated distribution function</li>
+</ul>
+<h3 data-number="2.1.7" id="initialize-the-distribution-function-landau-damping"><span class="header-section-number">2.1.7</span> Initialize the Distribution Function: Landau Damping</h3>
+<pre class="julia"><code>&quot;&quot;&quot;
+    landau(ϵ, kx, x, v)
+
+    Landau damping initialization function
+    
+    f(x,v) = (1/√(2π)) × (1 + ϵ cos(kₓ x)) × exp(-v²/2)
+    
+    This represents a perturbed Maxwell-Boltzmann distribution:
+    - Base: Gaussian distribution in velocity (thermal equilibrium)
+    - Perturbation: Sinusoidal density modulation in space
+    
+    Parameters:
+    - ϵ: Perturbation amplitude (typically small, ~0.001)
+    - kx: Wavenumber of the perturbation
+    - x: Spatial grid points
+    - v: Velocity grid points
+    
+    Physical Phenomenon:
+    In collisionless plasma, this small density perturbation excites
+    electrostatic waves. Due to wave-particle interactions (Landau damping),
+    the wave amplitude decays exponentially even without collisions,
+    with energy transferred to particle heating.
+    
+    See: https://en.wikipedia.org/wiki/Landau_damping
+
+&quot;&quot;&quot;
+function landau(ϵ, kx, x, v)
+    
+    # Create a 2D distribution: rows are spatial points, columns are velocity points
+    # cos(kx*x) is a column vector, exp(-v²/2) is a row vector
+    # Multiplying them together broadcasts to a 2D array
+    (1.0 .+ ϵ * cos.(kx * x)) / sqrt(2π) .* transpose(exp.(-0.5 * v .* v))
+    
+end</code></pre>
+<ul>
+<li>The Gaussian in velocity represents a thermalized plasma at rest</li>
+<li>The cosine modulation in space creates a density wave</li>
+<li>This wave couples to the plasma and creates oscillations</li>
+<li>Landau damping causes these oscillations to decay logarithmically: <span class="math inline">\(E(t) \propto e^{-\gamma t}\)</span> with <span class="math inline">\(\gamma &gt; 0\)</span></li>
+</ul>
+
+
+<div class="bottom-nav">
+    <p id="nav-prev" style="text-align: left;">
+        <a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system"><b>2</b> 1D Vlasov–Ampere System</a> <kbd>←</kbd>
+        <span id="nav-next" style="float: right;">
+            <kbd>→</kbd> <a class="menu-level-2" href="/JuliaNantes2019/simulation"><b>2.2</b> Simulation</a>
+        </span>
+    </p>
+</div>
+
+
+<div class="license">
+    <br/>
+  <br/>
+  <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>
+    Pierre Navaro
+</div>
+</div>
+</div>
+</body>
+</html>

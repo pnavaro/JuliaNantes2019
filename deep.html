@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="author" content="Pierre Navaro" />
+  <title>Deep Water Wave Problem: CPU Version - Julia Day</title>
+  <link rel="shortcut icon" type="image/png" href="/JuliaNantes2019/favicon.png"/>
+  <link rel="stylesheet" href="/JuliaNantes2019/style.css"/>
+    <script src="/JuliaNantes2019/mousetrap.min.js"></script>
+    <style>
+  @font-face {
+    font-family: JuliaMono-Regular;
+    src: url("/JuliaNantes2019/JuliaMono-Regular.woff2");
+  }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <link rel="stylesheet" href="/JuliaNantes2019/github.min.css">
+<script src="/JuliaNantes2019/highlight.min.js"></script>
+<script src="/JuliaNantes2019/julia.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+    document.querySelectorAll('pre').forEach((el) => {
+        if (!el.classList.contains('output')) {
+            hljs.highlightElement(el);
+        }
+    });
+});
+</script>
+ 
+</head>
+<body>
+<script>
+function click_next() {
+  var next = document.getElementById('nav-next');
+  next.firstElementChild.nextElementSibling.click();
+}
+function click_prev() {
+  var prev = document.getElementById('nav-prev');
+  prev.firstElementChild.click();
+}
+Mousetrap.bind('right', click_next);
+Mousetrap.bind('h', click_prev);
+Mousetrap.bind('left', click_prev);
+Mousetrap.bind('l', click_next);
+</script>
+
+<div class="books-container">
+<aside class="books-menu">
+<input type="checkbox" id="menu">
+<label for="menu">☰</label>
+<div class="books-title">
+<a href="/JuliaNantes2019/">Julia Day</a>
+</div><br />
+<span class="books-subtitle">
+Nantes 2019
+</span>
+<div class="books-menu-content">
+<li><a class="menu-level-1" href="/JuliaNantes2019/rotation"><b>1</b> 2D Rotation Problem: Advec..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation"><b>1.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/performance-optimization-four-implementations"><b>1.2</b> Performance Optimization..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-vlasovampere-system"><b>2</b> 1D Vlasov–Ampere System</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation-1"><b>2.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/simulation"><b>2.2</b> Simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/d-rotation-problem-cpu-vs-gpu-implementation"><b>3</b> 2D Rotation Problem: CPU v..</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep"><b>4</b> Deep Water Wave Problem: C..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/julia-implementation-2"><b>4.1</b> Julia implementation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/matsuno-model-deep-water-equations"><b>4.2</b> Matsuno Model: Deep Wate..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/animation-creation"><b>4.3</b> Animation Creation</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/main-cpu-simulation"><b>4.4</b> Main CPU Simulation</a></li>
+<li><a class="menu-level-1" href="/JuliaNantes2019/deep-water-wave-problem-gpu-version"><b>5</b> Deep Water Wave Problem: G..</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/import-cuda-libraries"><b>5.1</b> Import CUDA Libraries</a></li>
+<li><a class="menu-level-2" href="/JuliaNantes2019/benchmarking"><b>5.2</b> Benchmarking</a></li>
+</div>
+</aside>
+
+<div class="books-content">
+<h1 data-number="4" id="sec:deep"><span class="header-section-number">4</span> Deep Water Wave Problem: CPU Version</h1>
+<p>This chapter solves the <strong>deep water wave problem</strong>, a nonlinear dispersive equation that models surface gravity waves in water with infinite depth. This is a classic problem in fluid dynamics and demonstrates advanced numerical techniques:</p>
+<ol type="1">
+<li><strong>Spectral methods</strong>: Using Fourier transforms for spatial derivatives</li>
+<li><strong>Nonlinear dynamics</strong>: Capturing wave-wave interactions</li>
+<li><strong>Time integration</strong>: RK4 for high accuracy</li>
+<li><strong>Dealiasing</strong>: Preventing aliasing errors in nonlinear terms</li>
+<li><strong>High-performance computing</strong>: Parallel computation with threading</li>
+</ol>
+<p>The deep water equation is physically relevant for ocean waves, water tanks, and fundamental research in nonlinear wave dynamics.</p>
+<p>The deep water wave system can be written as:</p>
+<p><span class="math display">\[\frac{\partial \eta}{\partial t} = -\frac{\partial \phi}{\partial x} \bigg|_{z=0}\]</span></p>
+<p><span class="math display">\[\frac{\partial \phi}{\partial t} = -g\eta - \frac{1}{2}|\nabla \phi|^2 \bigg|_{z=0}\]</span></p>
+<p>where: - <span class="math inline">\(\eta(x,t)\)</span> is the surface elevation (the wave height) - <span class="math inline">\(\phi(x,t)\)</span> is the velocity potential - <span class="math inline">\(g\)</span> is gravitational acceleration</p>
+<p>Using the Matsuno formulation (a clever reformulation of the equations), we can write:</p>
+<p><span class="math display">\[\frac{\partial \eta}{\partial t} = -\frac{\partial \phi}{\partial x}\]</span></p>
+<p><span class="math display">\[\frac{\partial \phi}{\partial t} = -g\eta - \frac{1}{2}\left(\frac{\partial \phi}{\partial x}\right)^2 - \frac{1}{2}\mathcal{H}\left[\frac{\partial \phi}{\partial x}\right]^2\]</span></p>
+<p>where <span class="math inline">\(\mathcal{H}\)</span> is the Hilbert transform and <span class="math inline">\(g = 1\)</span> (normalized).</p>
+<ul>
+<li><strong>Dispersive waves</strong>: Different wavelengths travel at different speeds</li>
+<li><strong>Nonlinearity</strong>: Large-amplitude waves interact through nonlinear terms</li>
+<li><strong>Wave steepening</strong>: Waves can develop sharp crests</li>
+<li><strong>Recurrence</strong>: In finite domains, waves can return to nearly their initial state (Fermi-Pasta-Ulam recurrence)</li>
+</ul>
+
+
+<div class="bottom-nav">
+    <p id="nav-prev" style="text-align: left;">
+        <a class="menu-level-1" href="/JuliaNantes2019/d-rotation-problem-cpu-vs-gpu-implementation"><b>3</b> 2D Rotation Problem: CPU v..</a> <kbd>←</kbd>
+        <span id="nav-next" style="float: right;">
+            <kbd>→</kbd> <a class="menu-level-2" href="/JuliaNantes2019/julia-implementation-2"><b>4.1</b> Julia implementation</a>
+        </span>
+    </p>
+</div>
+
+
+<div class="license">
+    <br/>
+  <br/>
+  <a href="http://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a>
+    Pierre Navaro
+</div>
+</div>
+</div>
+</body>
+</html>
